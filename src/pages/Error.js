@@ -1,6 +1,7 @@
-import React from 'react'
+import React from "react";
+import Hero from "../components/Hero";
 
-export default function () {
-    return <div> hello from eror page </div>;
+export default function Error() {
+    return <Hero />;
     
 }
