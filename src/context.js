@@ -1,69 +1,104 @@
-import React, { Component } from "react";
-
+import React, { useState, createContext, useEffect} from 'react';
 import items from './data'
-const RoomContext = React.createContext();
-// <RoomContext.Provider value={'hello'}
 
-export default class RoomProvider extends Component {
-     state = {
-         rooms:[],
-         sortedRooms:[],
-         featuredRooms:[],
-         loading: true
+export const RoomContext = createContext()
 
-        
-      };
+function RoomProvider(props) {
+  const formatData = (data) => {
+    let tempData = data.map(item => {
+      let id = item.sys.id
+      let images = item.fields.images.map(image => image.fields.file.url)
+      let room = {...item.fields, images, id}
+      return room
+    })
+    return tempData
+  }
 
-//getData
+  const [rooms, setRooms] = useState(formatData(items))
+  const [sortedRooms, setSortedRooms] = useState(formatData(items))
+  const [featuredRooms] = useState(formatData(items).filter(item => item.featured === true))
+  const [loading, setLoading] = useState(false)
 
-componentDidMount(){
-let rooms = this.formatData(items);
-let featuredRooms = rooms.filter(room => room.featured === true);
-this.setState({
-    rooms,
-    featuredRooms,
-    sortedRooms:rooms,
-    loading:false
-
-});
-
-}
-
-formatData(items){
-let tempItems = items.map(item => {
-let id = item.sys.id;
-let images = item.fields.images.map(image => image.fields.file.url);
-
-let room = { ...item.fields, images,id  }
-return room;
-  } );
-
-    return tempItems;
-}
-
-
-getRoom=(slug)=>{
-    let tempRooms = [...this.state.rooms];
-    const room = tempRooms.find(room => room.slug === slug);
-    return room;
-
-};
-
-
-
-
-    render() {
-        return( 
-        <RoomContext.Provider value={{ ...this.state,
-            getRoom: this.getRoom }}>
-            {this.props.children}
-            </RoomContext.Provider>
-                
-        );
-        
+  const [filterInput, setFilterInput] = useState(
+    { 
+      type: 'all',
+      capacity: '',
+      price: Math.max(...rooms.map(item => item.price)),
+      minPrice: 0,
+      maxPrice: Math.max(...rooms.map(item => item.price)),
+      minSize: 0,
+      maxSize: Math.max(...rooms.map(item => item.size)), 
+      breakfastInput: false,
+      petsInput: false,
     }
+  )
+  
+  const getRoom = (slug) => {
+     const singleRoom = rooms.find(item => item.slug === slug)
+     return singleRoom 
+  }
+
+  //Types for select options
+  const uniqueTypes = () => {
+    const uniqueTypesList = [... new Set(rooms.map(item => item.type))]
+    const newArr = ['all', ...uniqueTypesList].map((item, index) => {
+      return <option value={item} key={index}>{item}</option>
+    })
+    return newArr
+  }
+
+  //Capacity for select options
+  const uniquePeople = () => {
+    const uniqueTypesList = [... new Set(rooms.map(item => item.capacity))]
+    const newArr = [...uniqueTypesList].map((item, index) => {
+      return <option value={item} key={index}>{item}</option>
+    })
+    return newArr
+  }
+
+  const filterRooms = () => {
+    let tempRooms = [...rooms]
+    if (filterInput.type !== "all") {
+      tempRooms = tempRooms.filter(room => room.type === filterInput.type)
+    } 
+    if (+filterInput.capacity !== 1) {
+      tempRooms = tempRooms.filter(room => room.capacity >= filterInput.capacity);
+    }
+    tempRooms = tempRooms.filter(room => room.price <= filterInput.price);
+    tempRooms = tempRooms.filter(
+      room => room.size >= filterInput.minSize && room.size <= filterInput.maxSize
+    );
+    if (filterInput.breakfastInput) {
+      tempRooms = tempRooms.filter(room => room.breakfast === true);
+    }
+    if (filterInput.petsInput) {
+      tempRooms = tempRooms.filter(room => room.pets === true);
+    }
+    setSortedRooms(tempRooms)
+  }
+
+  useEffect(() => {
+    filterRooms()
+  }, [filterInput])
+    
+
+  return (
+    <RoomContext.Provider value={{
+      rooms,
+      sortedRooms,
+      featuredRooms,
+      loading,
+      getRoom, 
+      uniqueTypes, 
+      uniquePeople, 
+      filterInput, 
+     
+      setFilterInput}}> 
+      {props.children}
+    </RoomContext.Provider>
+   
+  )
 }
+export default RoomProvider
 
-const RoomConsumer = RoomContext.Consumer;
 
-export { RoomProvider , RoomConsumer , RoomContext };

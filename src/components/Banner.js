@@ -1,12 +1,14 @@
-import React from "react";
+import React from 'react'
 
-export default function Banner({children,title,subtitle}) {
-    return (
-        <div className="banner">
-            <h1>{title}</h1>
-            <div />
-    <p> {subtitle} </p>
-    {children}
-        </div>
-    );
+function Banner(props) {
+  return (
+    <div className="banner">
+      <h1>{props.title}</h1>
+      <p>{props.subtitle}</p>
+      <div></div>
+      {props.children}
+    </div>
+  )
 }
+
+export default Banner
